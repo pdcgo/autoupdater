@@ -164,13 +164,18 @@ func ConfigureClient(appName string, bucketId string) (*AppArchiver, error) {
 // }
 
 func appendToZipFile(src string, dest string, zipw *zip.Writer) error {
+	destapp := dest
+	if strings.HasPrefix(dest, "/") || strings.HasPrefix(dest, `\`) {
+		destapp = "." + dest
+	}
+	log.Println("Copying ", src, " to ", destapp)
 	file, err := os.Open(src)
 	if err != nil {
 		return fmt.Errorf("failed to open %s: %s", src, err)
 	}
 	defer file.Close()
 
-	wr, err := zipw.Create(dest)
+	wr, err := zipw.Create(destapp)
 	if err != nil {
 		msg := "failed to create entry for %s in zip file: %s"
 		return fmt.Errorf(msg, dest, err)
@@ -210,7 +215,10 @@ func (pub *Publiser) Run() {
 		if err != nil {
 			log.Panicln(err)
 		}
-		appendFile(output)
+		err = appendFile(output)
+		if err != nil {
+			log.Panicln(err)
+		}
 	}
 
 	close()
@@ -267,7 +275,7 @@ func (pub *Publiser) uploadZipFile(ziplocation string) {
 	log.Println("Success upload archiver")
 }
 
-func (pub *Publiser) createdZippedFile() (string, func(buildpath string), func()) {
+func (pub *Publiser) createdZippedFile() (string, func(buildpath string) error, func()) {
 	location := filepath.Join(pub.OutputDir, pub.Variant+".zip")
 	log.Println("creating", location)
 
@@ -275,14 +283,13 @@ func (pub *Publiser) createdZippedFile() (string, func(buildpath string), func()
 	if err != nil {
 		panic("failed create compressed file")
 	}
-	defer zipFile.Close()
 
 	archive := zip.NewWriter(zipFile)
 
-	return location, func(buildpath string) {
+	return location, func(buildpath string) error {
 			destination := strings.Split(buildpath, pub.OutputDir)
 			dest := destination[len(destination)-1]
-			appendToZipFile(buildpath, dest, archive)
+			return appendToZipFile(buildpath, dest, archive)
 		}, func() {
 			zipFile.Close()
 		}
