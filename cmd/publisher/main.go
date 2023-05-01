@@ -11,7 +11,7 @@ import (
 
 func main() {
 	up := autoupdater.Publiser{
-		Version:       "2.0.0",
+		Version:       "3.0.0",
 		Storage:       "tiktok_chat_artifact",
 		Variant:       "beta",
 		OutputDir:     "dist",

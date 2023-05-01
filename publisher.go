@@ -166,7 +166,7 @@ func ConfigureClient(appName string, bucketId string) (*AppArchiver, error) {
 func appendToZipFile(src string, dest string, zipw *zip.Writer) error {
 	destapp := dest
 	if strings.HasPrefix(dest, "/") || strings.HasPrefix(dest, `\`) {
-		destapp = "." + dest
+		destapp = dest[1:]
 	}
 	log.Println("Copying ", src, " to ", destapp)
 	file, err := os.Open(src)
@@ -291,6 +291,7 @@ func (pub *Publiser) createdZippedFile() (string, func(buildpath string) error, 
 			dest := destination[len(destination)-1]
 			return appendToZipFile(buildpath, dest, archive)
 		}, func() {
+			archive.Close()
 			zipFile.Close()
 		}
 }
