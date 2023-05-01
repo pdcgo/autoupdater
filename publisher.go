@@ -204,11 +204,12 @@ type Publiser struct {
 	BuildCmd      []BuildFunc
 }
 
-func (pub *Publiser) Run() {
+func (pub *Publiser) RunBuild() string {
 	pub.createOutputDir()
 	pub.buildUpdater()
 
 	location, appendFile, close := pub.createdZippedFile()
+	defer close()
 
 	for _, handlerfn := range pub.BuildCmd {
 		output, err := handlerfn(pub.OutputDir)
@@ -220,8 +221,11 @@ func (pub *Publiser) Run() {
 			log.Panicln(err)
 		}
 	}
+	return location
+}
 
-	close()
+func (pub *Publiser) Run() {
+	location := pub.RunBuild()
 	pub.uploadZipFile(location)
 
 }
